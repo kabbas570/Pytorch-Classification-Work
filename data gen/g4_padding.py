@@ -9,33 +9,20 @@ NUM_WORKERS=0
 PIN_MEMORY=True
 
 
-transform1 = A.Compose([
-    A.Resize(width=576, height=576)
-])
+
 transform2 = A.Compose([
-    A.Resize(width=288, height=288)
+    A.Resize(width=320, height=320)
 ])
 
 transform3 = A.Compose([
-    A.Resize(width=144, height=144)
+    A.Resize(width=160, height=160)
 ])
-
-#transform1 = A.Compose([
-#    A.Resize(width=640, height=640)
-#])
-#transform2 = A.Compose([
-#    A.Resize(width=320, height=320)
-#])
-#
-#transform3 = A.Compose([
-#    A.Resize(width=160, height=160)
-#])
 class Dataset_(Dataset):
-    def __init__(self, image_dir, mask_dir,transform1=transform1,transform2=transform2,transform3=transform3):
+    def __init__(self, image_dir, mask_dir,transform2=transform2,transform3=transform3):
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.images = os.listdir(image_dir)
-        self.transform1 = transform1
+
         self.transform2 = transform2
         self.transform3 = transform3
 
@@ -54,35 +41,35 @@ class Dataset_(Dataset):
         
         mask = np.load(mask_path,allow_pickle=True, fix_imports=True)
         mask[np.where(mask>0)]=1.0
+        print(image.shape[0])
+        if image.shape[0]==576:
+          temp=np.zeros([640,640])
+          temp1=np.zeros([640,640])
+          
+          temp[32:608, 32:608] = image
+          image=temp
+          
+          temp1[32:608, 32:608] = mask
+          mask=temp1
+          
         
-#        if nii_img.shape[0]==576:
-#          temp=np.zeros([640,640])
-#          temp1=np.zeros([640,640])
-#          
-#          temp[32:608, 32:608] = image
-#          image=temp
-#          
-#          temp1[32:608, 32:608] = mask
-#          mask=temp1
-#          
         
-        
-        if self.transform1 is not None:
-            augmentations1 = self.transform1(image=image,masks=[mask])
+        if self.transform2 is not None:
+            
             augmentations2 = self.transform2(image=image)
             augmentations3 = self.transform3(image=image)
-            image1 = augmentations1["image"]
+
             image2 = augmentations2["image"]
             image3 = augmentations3["image"]
-            mask = augmentations1["masks"][0]
+
             
-            image1=np.expand_dims(image1, axis=0)
+            image=np.expand_dims(image, axis=0)
             image2=np.expand_dims(image2, axis=0)
             image3=np.expand_dims(image3, axis=0)
             mask=np.expand_dims(mask, axis=0)
            
 
-        return image1,image2,image3,mask,self.images[index][:-4]
+        return image,image2,image3,mask,self.images[index][:-4]
     
 def Data_Loader( test_dir,test_maskdir,batch_size,num_workers=NUM_WORKERS,pin_memory=PIN_MEMORY):
     
@@ -91,3 +78,24 @@ def Data_Loader( test_dir,test_maskdir,batch_size,num_workers=NUM_WORKERS,pin_me
     data_loader = DataLoader(test_ids,batch_size=batch_size,num_workers=num_workers,pin_memory=pin_memory,shuffle=True)
     
     return data_loader
+
+
+batch_size=2
+image_path = '/Users/kabbas570gmail.com/Documents/Challenge/valid/img'
+mask_path = '/Users/kabbas570gmail.com/Documents/Challenge/valid/gt'
+
+
+val_loader=Data_Loader(image_path,mask_path,batch_size)
+
+a=iter(val_loader)
+a1=next(a)
+
+img=a1[0].numpy()
+g1=a1[1].numpy()
+g2=a1[2].numpy()
+g3=a1[3].numpy()
+
+img=img[0,0,:,:]
+g1=g1[0,0,:,:]
+g2=g2[0,0,:,:]
+g3=g3[0,0,:,:]
